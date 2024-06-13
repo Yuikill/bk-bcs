@@ -125,7 +125,7 @@ const routes = [
             component: () => import('./views/space/scripts/list/script-list.vue'),
           },
           {
-            path: 'version_manage/:scriptId',
+            path: 'manage',
             name: 'script-version-manage',
             meta: {
               navModule: 'scripts',
@@ -157,6 +157,32 @@ const routes = [
           navModule: 'credentials',
         },
         component: () => import('./views/space/credentials/index.vue'),
+      },
+      {
+        path: 'data_source',
+        name: 'data-source-management',
+        meta: {
+          navModule: 'data-source',
+        },
+        component: () => import('./views/space/data-source/index.vue'),
+        children: [
+          {
+            path: 'table',
+            name: 'trusteeship-table',
+            meta: {
+              navModule: 'data-source',
+            },
+            component: () => import('./views/space/data-source/table/index.vue'),
+          },
+          {
+            path: 'manage',
+            name: 'data-source-manage',
+            meta: {
+              navModule: 'data-source',
+            },
+            component: () => import('./views/space/data-source/manage/index.vue'),
+          },
+        ],
       },
     ],
   },

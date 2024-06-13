@@ -8,6 +8,7 @@ export const CONFIG_KV_TYPE = [
   { id: 'json', name: 'JSON' },
   { id: 'xml', name: 'XML' },
   { id: 'yaml', name: 'YAML' },
+  { id: 'table', name: 'Table' },
 ];
 
 // 文件类型的配置项包含的子类型
