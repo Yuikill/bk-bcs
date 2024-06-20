@@ -1,0 +1,108 @@
+<template>
+  <DetailLayout :name="$t('新建表格')">
+    <template #content>
+      <div class="create-table-content">
+        <Card :title="$t('表结构来源')">
+          <div class="table-source-type">
+            <div
+              v-for="item in tableStructureSource"
+              :key="item.value"
+              :class="[
+                'table-source-type-item',
+                { disabled: item.value === 'tencent-doc', active: selectedType === item.value },
+              ]"
+              @click="selectedType = item.value">
+              <div class="header">
+                <i class="bk-bscp-icon icon-revoke" />
+                <span class="title">{{ item.label }}</span>
+              </div>
+              <div class="info">{{ item.info }}</div>
+            </div>
+          </div>
+        </Card>
+        <ManualCreate v-if="selectedType === 'create'" />
+      </div>
+    </template>
+  </DetailLayout>
+</template>
+
+<script lang="ts" setup>
+  import { ref } from 'vue';
+  import DetailLayout from '../../component/detail-layout.vue';
+  import Card from '../../component/card.vue';
+  import ManualCreate from './manual-create/index.vue';
+  import { useI18n } from 'vue-i18n';
+  const { t } = useI18n();
+
+  const selectedType = ref('');
+
+  const tableStructureSource = [
+    {
+      label: t('手动创建表结构'),
+      value: 'create',
+      info: t('目前没有表格结构及数据信息，需要先手动创建表结构，然后手动录入数据'),
+    },
+    {
+      label: t('从本地文件导入'),
+      value: 'import',
+      info: t(
+        '可以从本地导入 Excel/CSV 格式的数据文件（.xlsx/.xls/.csv)，还可以从带有 .sql 后缀的 MySQL dump 文件中导入表结构与数据',
+      ),
+    },
+  ];
+</script>
+
+<style scoped lang="scss">
+  .create-table-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    background: #f5f7fa;
+    padding: 24px 0;
+    min-height: 100%;
+  }
+  .table-source-type {
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    .table-source-type-item {
+      padding: 16px;
+      width: 464px;
+      height: 100px;
+      border-radius: 2px;
+      border: 1px solid #dcdee5;
+      .header {
+        display: flex;
+        align-items: center;
+        .bk-bscp-icon {
+          font-size: 24px;
+          margin-right: 7px;
+        }
+        .title {
+          font-size: 14px;
+        }
+      }
+      .info {
+        margin-top: 12px;
+        font-size: 12px;
+        color: #979ba5;
+      }
+      &.active {
+        color: #3a84ff;
+        border: 1px solid #3a84ff;
+        background: #f0f5ff;
+        cursor: pointer;
+      }
+      &.disabled {
+        color: #c4c6cc;
+        cursor: not-allowed;
+        border: 1px solid #eaebf0;
+        background: #fafbfd;
+        .info {
+          color: #c4c6cc;
+        }
+      }
+    }
+  }
+</style>

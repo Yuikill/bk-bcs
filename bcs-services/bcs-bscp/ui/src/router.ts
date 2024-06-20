@@ -172,7 +172,7 @@ const routes = [
             meta: {
               navModule: 'data-source',
             },
-            component: () => import('./views/space/data-source/table/index.vue'),
+            component: () => import('./views/space/data-source/trusteeship-table/index.vue'),
           },
           {
             path: 'manage',
