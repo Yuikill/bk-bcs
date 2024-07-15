@@ -23,6 +23,7 @@
     .card-header {
       display: flex;
       align-items: center;
+      margin-bottom: 16px;
       .title {
         margin-right: 16px;
         font-size: 14px;

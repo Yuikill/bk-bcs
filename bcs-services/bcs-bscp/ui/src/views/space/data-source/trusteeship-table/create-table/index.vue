@@ -2,7 +2,7 @@
   <DetailLayout :name="$t('新建表格')">
     <template #content>
       <div class="create-table-content">
-        <Card :title="$t('表结构来源')">
+        <Card :title="$t('表结构来源')" class="table-source-card">
           <div class="table-source-type">
             <div
               v-for="item in tableStructureSource"
@@ -63,7 +63,6 @@
     min-height: 100%;
   }
   .table-source-type {
-    margin-top: 12px;
     display: flex;
     justify-content: space-between;
     .table-source-type-item {
@@ -103,6 +102,12 @@
           color: #c4c6cc;
         }
       }
+    }
+  }
+
+  .table-source-card {
+    :deep(.card-header) {
+      margin-bottom: 12px;
     }
   }
 </style>
