@@ -1,5 +1,5 @@
 <template>
-  <DetailLayout :name="$t('新建表格')">
+  <DetailLayout :name="$t('新建表格')" @close="handleCloseCreate">
     <template #content>
       <div class="create-table-content">
         <Card :title="$t('表结构来源')" class="table-source-card">
@@ -20,7 +20,15 @@
             </div>
           </div>
         </Card>
-        <ManualCreate v-if="selectedType === 'create'" />
+        <ManualCreate v-if="selectedType === 'create'" :is-manual-create="true" :bk-biz-id="bkBizId" :is-edit="false" />
+        <ImportFormLocal v-else-if="selectedType === 'import'" :bk-biz-id="bkBizId" />
+      </div>
+    </template>
+    <template #footer>
+      <div class="operation-btns">
+        <bk-button theme="primary" style="width: 88px">{{ $t('创建') }}</bk-button>
+        <bk-button style="width: 130px">{{ $t('创建并编辑数据') }}</bk-button>
+        <bk-button style="width: 88px" @click="handleCloseCreate">{{ $t('取消') }}</bk-button>
       </div>
     </template>
   </DetailLayout>
@@ -28,11 +36,19 @@
 
 <script lang="ts" setup>
   import { ref } from 'vue';
+  import { useRoute } from 'vue-router';
   import DetailLayout from '../../component/detail-layout.vue';
   import Card from '../../component/card.vue';
-  import ManualCreate from './manual-create/index.vue';
+  import ManualCreate from '../components/table-structure-form.vue';
+  import ImportFormLocal from './import-form-local/index.vue';
   import { useI18n } from 'vue-i18n';
+
   const { t } = useI18n();
+
+  const emits = defineEmits(['close']);
+
+  const route = useRoute();
+  const bkBizId = String(route.params.spaceId);
 
   const selectedType = ref('');
 
@@ -50,6 +66,10 @@
       ),
     },
   ];
+
+  const handleCloseCreate = () => {
+    emits('close');
+  };
 </script>
 
 <style scoped lang="scss">
@@ -71,6 +91,7 @@
       height: 100px;
       border-radius: 2px;
       border: 1px solid #dcdee5;
+      cursor: pointer;
       .header {
         display: flex;
         align-items: center;
@@ -109,5 +130,10 @@
     :deep(.card-header) {
       margin-bottom: 12px;
     }
+  }
+
+  .operation-btns {
+    display: flex;
+    gap: 8px;
   }
 </style>

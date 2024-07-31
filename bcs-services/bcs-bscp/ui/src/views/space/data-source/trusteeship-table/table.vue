@@ -9,7 +9,9 @@
       @page-value-change="handlePageCurrentChange">
       <bk-table-column :label="$t('表格名称')">
         <template #default="{ row }">
-          <bk-button v-if="row.name" text theme="primary"> {{ row.name }} </bk-button>
+          <bk-button v-if="row.name" text theme="primary" @click="handleViewTableDetail(row)">
+            {{ row.name }}
+          </bk-button>
         </template>
       </bk-table-column>
       <bk-table-column :label="$t('表格描述')" prop="memo" />
@@ -23,8 +25,8 @@
       <bk-table-column :label="$t('操作')">
         <template #default="{ row }">
           <div class="action-btns">
-            <bk-button text theme="primary" @click="handleEditData(row)">{{ $t('编辑数据') }}</bk-button>
-            <bk-button text theme="primary" @click="handleDeleteDataSource(row)">{{ $t('编辑表结构') }}</bk-button>
+            <bk-button text theme="primary" @click="handleEditTableData(row)">{{ $t('编辑数据') }}</bk-button>
+            <bk-button text theme="primary" @click="handleEditTableStructure(row)">{{ $t('编辑表结构') }}</bk-button>
             <bk-popover
               theme="light trusteeship-table-actions-popover"
               placement="bottom-end"
@@ -48,14 +50,25 @@
       </bk-table-column>
     </bk-table>
   </bk-loading>
+  <TableDetail v-if="isShowTableDetail" @close="isShowTableDetail = false" />
+  <EditTableStructure v-if="isShowEditTableStructure" :bk-biz-id="bkBizId" @close="isShowEditTableStructure = false" />
+  <EditTableData v-if="isShowEditTableData" :bk-biz-id="bkBizId" @close="isShowEditTableData = false" />
 </template>
 
 <script lang="ts" setup>
   import { ref } from 'vue';
   import { Ellipsis } from 'bkui-vue/lib/icon';
   import useTablePagination from '../../../../utils/hooks/use-table-pagination';
+  import TableDetail from './table-detail/index.vue';
+  import EditTableStructure from './edit-table-structure.vue';
+  import EditTableData from './edit-table-data/index.vue';
 
   const { pagination, updatePagination } = useTablePagination('dataSource');
+
+  defineProps<{
+    bkBizId: string;
+  }>();
+
   const tableLoading = ref(false);
   const tableData = ref([
     {
@@ -80,12 +93,17 @@
       updatedAt: '2022-01-01',
     },
   ]);
+  const isShowTableDetail = ref(false);
+  const isShowEditTableStructure = ref(false);
+  const isShowEditTableData = ref(false);
 
-  const handleEditData = (tableItem: any) => {
+  const handleEditTableData = (tableItem: any) => {
     console.log(tableItem);
+    isShowEditTableData.value = true;
   };
-  const handleDeleteDataSource = (tableItem: any) => {
+  const handleEditTableStructure = (tableItem: any) => {
     console.log(tableItem);
+    isShowEditTableStructure.value = true;
   };
 
   const handlePageLimitChange = (val: number) => {
@@ -106,6 +124,11 @@
 
   const handleDeleteTable = (tableItem: any) => {
     console.log(tableItem);
+  };
+
+  const handleViewTableDetail = (tableItem: any) => {
+    console.log(tableItem);
+    isShowTableDetail.value = true;
   };
 </script>
 

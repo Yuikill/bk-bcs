@@ -4,6 +4,7 @@
       <div class="nav-title">
         <ArrowsLeft class="arrow-icon" @click="emits('close')" />
         <span class="title">{{ props.name }}</span>
+        <span v-if="detail" class="detail">{{ detail }}</span>
       </div>
     </header>
     <div :class="['layout-content', { 'without-footer': !props.showFooter }]">
@@ -24,6 +25,7 @@
   const props = withDefaults(
     defineProps<{
       name: string;
+      detail?: string;
       showFooter?: boolean;
     }>(),
     {

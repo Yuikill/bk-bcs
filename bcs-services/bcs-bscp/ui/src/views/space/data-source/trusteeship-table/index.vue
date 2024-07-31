@@ -1,7 +1,7 @@
 <template>
   <div class="operate-area">
     <div class="operate-btns">
-      <bk-button theme="primary" @click="handleOpenCreate">{{ $t('新建数据源') }}</bk-button>
+      <bk-button theme="primary" @click="handleOpenCreate">{{ $t('新建表格') }}</bk-button>
       <div class="tab">
         <div
           v-for="item in panels"
@@ -19,15 +19,19 @@
       :width="280"
       :placeholder="$t('数据源名称/数据源别名/最近更新人')" />
   </div>
-  <Table />
-  <CreateTable v-if="showCreateTable" @close="showCreateTable = false"/>
+  <Table :bk-biz-id="bkBizId" />
+  <CreateTable v-if="isShowCreateTable" @close="isShowCreateTable = false" />
 </template>
 
 <script lang="ts" setup>
   import { ref } from 'vue';
+  import { useRoute } from 'vue-router';
   import SearchInput from '../../../../components/search-input.vue';
   import Table from './table.vue';
   import CreateTable from './create-table/index.vue';
+
+  const route = useRoute();
+  const bkBizId = String(route.params.spaceId);
 
   const searchStr = ref('');
   const active = ref('all');
@@ -45,7 +49,7 @@
       label: '腾讯文档',
     },
   ];
-  const showCreateTable = ref(false);
+  const isShowCreateTable = ref(false);
 
   const handleTabClick = (value: string) => {
     if (value === 'tencent-doct') return;
@@ -53,7 +57,7 @@
   };
 
   const handleOpenCreate = () => {
-    showCreateTable.value = true;
+    isShowCreateTable.value = true;
   };
 </script>
 

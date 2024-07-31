@@ -1,7 +1,7 @@
 <template>
   <div class="data-source-page">
     <div class="data-source-header">
-      <span class="title">{{ t('表格数据源结构') }}</span>
+      <span class="title">{{ t('表格数据源管理') }}</span>
       <div class="tabs">
         <div :class="['line', { manage: activeTab === 'manage' }]"></div>
         <div

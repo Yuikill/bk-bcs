@@ -836,7 +836,6 @@
   };
 
   const handleChildSelectorClickOutside = () => {
-    console.log('click outside');
     if (editConditionItem.value) {
       // 编辑态 取消编辑
       editConditionItem.value!.isEdit = false;
