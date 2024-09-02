@@ -23,7 +23,7 @@
                   <div class="version-tag base-version">{{ showPublishBtn ? t('线上版本') : t('对比版本') }}</div>
                   <bk-select
                     :model-value="selectedBaseVersion"
-                    style="width: 320px"
+                    :style="{ width: locale === 'zh-cn' ? '320px' : '300px' }"
                     :loading="versionListLoading"
                     :clearable="false"
                     :no-data-text="t('暂无数据')"
@@ -78,6 +78,8 @@
     // 差异详情数据
     id: 0,
     contentType: 'text',
+    is_secret: false,
+    secret_hidden: false,
     current: {
       language: '',
       content: '',
@@ -88,7 +90,7 @@
     },
   });
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const props = defineProps<{
     show: boolean;
     showPublishBtn?: boolean; // 是否显示发布按钮

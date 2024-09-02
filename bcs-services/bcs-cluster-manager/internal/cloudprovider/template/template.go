@@ -16,7 +16,6 @@ package template
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/common"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +24,7 @@ import (
 
 	proto "github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/api/clustermanager"
 	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/cloudprovider"
+	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/common"
 	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/utils"
 )
 
@@ -302,6 +302,14 @@ func getTemplateParameterByName(name string, cluster *proto.Cluster, extra Extra
 		return envs, nil
 	case nodeGroupID:
 		return extra.NodeGroupID, nil
+	case clusterCloudArea:
+		return fmt.Sprintf("%v", getClusterCloudArea(cluster)), nil
+	case clusterOsType:
+		return getClusterOsType(cluster), nil
+	case clusterK8sVersion:
+		return cluster.GetClusterBasicSettings().GetVersion(), nil
+	case clusterProvider:
+		return cluster.GetProvider(), nil
 	default:
 	}
 

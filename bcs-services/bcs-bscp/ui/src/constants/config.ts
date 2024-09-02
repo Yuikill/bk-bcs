@@ -9,6 +9,7 @@ export const CONFIG_KV_TYPE = [
   { id: 'xml', name: 'XML' },
   { id: 'yaml', name: 'YAML' },
   { id: 'table', name: 'Table' },
+  { id: 'secret', name: localT('敏感信息') },
 ];
 
 // 文件类型的配置项包含的子类型

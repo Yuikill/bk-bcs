@@ -43,6 +43,7 @@ type GitOpsProxy interface {
 // UserInfo for token validate
 type UserInfo struct {
 	*jwt.UserClaimsInfo
+	IsTencent bool
 }
 
 // GetUser string
@@ -56,6 +57,10 @@ func (user *UserInfo) GetUser() string {
 	return ""
 }
 
+const (
+	poTencentUserPrefix = "potencent_"
+)
+
 // GetJWTInfo from request
 func GetJWTInfo(req *http.Request, client *jwt.JWTClient) (*UserInfo, error) {
 	raw := req.Header.Get("Authorization")
@@ -66,6 +71,11 @@ func GetJWTInfo(req *http.Request, client *jwt.JWTClient) (*UserInfo, error) {
 	if common.IsAdminUser(user.ClientID) {
 		userName := req.Header.Get(common.HeaderBKUserName)
 		user.UserName = userName
+	}
+	user.IsTencent = true
+	if strings.HasPrefix(user.GetUser(), poTencentUserPrefix) {
+		user.UserName = strings.TrimPrefix(user.UserName, poTencentUserPrefix)
+		user.IsTencent = false
 	}
 	return user, nil
 }
@@ -83,16 +93,16 @@ func GetJWTInfoWithAuthorization(authorization string, client *jwt.JWTClient) (*
 	if err != nil {
 		return nil, err
 	}
-	u := &UserInfo{claim}
+	u := &UserInfo{UserClaimsInfo: claim}
 	if u.GetUser() == "" {
 		return nil, fmt.Errorf("lost user information")
 	}
 	return u, nil
 }
 
-// IsAdmin check if request comes from admin,
+// IsGitOpsClient check if request comes from bcs-gitops client,
 // only use for gitops command line
-func IsAdmin(req *http.Request) bool {
+func IsGitOpsClient(req *http.Request) bool {
 	token := req.Header.Get(common.HeaderBCSClient)
 	return token == common.ServiceNameShort
 }

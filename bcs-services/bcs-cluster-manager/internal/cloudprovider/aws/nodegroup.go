@@ -189,7 +189,7 @@ func (ng *NodeGroup) CleanNodesInGroup(nodes []*proto.Node, group *proto.NodeGro
 }
 
 // UpdateDesiredNodes update nodegroup desired node
-func (ng *NodeGroup) UpdateDesiredNodes(desiredNode uint32, group *proto.NodeGroup,
+func (ng *NodeGroup) UpdateDesiredNodes(desired uint32, group *proto.NodeGroup,
 	opt *cloudprovider.UpdateDesiredNodeOption) (*cloudprovider.ScalingResponse, error) {
 	if group == nil || opt == nil || opt.Cluster == nil || opt.Cloud == nil {
 		return nil, fmt.Errorf("invalid request")
@@ -209,11 +209,21 @@ func (ng *NodeGroup) UpdateDesiredNodes(desiredNode uint32, group *proto.NodeGro
 		return nil, err
 	}
 	if len(taskList) != 0 {
-		return nil, fmt.Errorf("%d %s task(s) is still running", len(taskList), taskType)
+		return nil, fmt.Errorf("gke task(%d) %s is still running", len(taskList), taskType)
+	}
+
+	needScaleOutNodes := desired - group.GetAutoScaling().GetDesiredSize()
+
+	blog.Infof("cluster[%s] nodeGroup[%s] current nodes[%d] desired nodes[%d] needNodes[%s]",
+		group.ClusterID, group.NodeGroupID, group.GetAutoScaling().GetDesiredSize(), desired, needScaleOutNodes)
+
+	if desired <= group.GetAutoScaling().GetDesiredSize() {
+		return nil, fmt.Errorf("NodeGroup %s current nodes %d larger than or equel to desired %d nodes",
+			group.Name, group.GetAutoScaling().GetDesiredSize(), desired)
 	}
 
 	return &cloudprovider.ScalingResponse{
-		ScalingUp: desiredNode,
+		ScalingUp: needScaleOutNodes,
 	}, nil
 }
 
@@ -311,6 +321,6 @@ func (ng *NodeGroup) GetExternalNodeScript(group *proto.NodeGroup, internal bool
 }
 
 // CheckResourcePoolQuota check resource pool quota when revise group limit
-func (ng *NodeGroup) CheckResourcePoolQuota(region, instanceType string, groupId string) error {
+func (ng *NodeGroup) CheckResourcePoolQuota(group *proto.NodeGroup, scaleUpNum uint32) error {
 	return nil
 }

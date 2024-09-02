@@ -4,7 +4,7 @@
       <div class="create-script-forms">
         <bk-form ref="formRef" form-type="vertical" :model="formData" :rules="rules">
           <bk-form-item class="fixed-width-form" :label="t('脚本名称')" property="name" required>
-            <bk-input v-model="formData.name" :placeholder="t('请输入')" />
+            <bk-input v-model="formData.name" :placeholder="t('请输入脚本名称')" />
           </bk-form-item>
           <bk-form-item class="fixed-width-form" property="tag" :label="t('分类标签')">
             <!-- <bk-input v-model="formData.tag" /> -->
@@ -82,6 +82,8 @@
   const SCRIPT_TYPE = [
     { id: EScriptType.Shell, name: 'Shell' },
     { id: EScriptType.Python, name: 'Python' },
+    { id: EScriptType.Bat, name: 'Bat' },
+    { id: EScriptType.Powershell, name: 'Powershell' },
   ];
 
   const formRef = ref();
@@ -102,11 +104,16 @@
       '#!/bin/bash\n##### 进入配置文件存放目录： cd ${bk_bscp_app_temp_dir}/files\n##### 进入前/后置脚本存放目录： cd ${bk_bscp_app_temp_dir}/hooks',
     python:
       '#!/usr/bin/env python\n# -*- coding: utf8 -*-\n##### 进入配置文件存放目录： config_dir = os.environ.get(‘bk_bscp_app_temp_dir’)+”/files”;os.chdir(config_dir)\n##### 进入前/后置脚本存放目录： hook_dir = os.environ.get(‘bk_bscp_app_temp_dir’)+”/hooks”;os.chdir(hook_dir)',
+    bat: '@echo on\nsetlocal enabledelayedexpansion\nREM 进入配置文件存放目录： cd/d %bk_bscp_app_temp_dir%\\files\nREM 进入前/后置脚本存放目录： cd/d %bk_bscp_app_temp_dir%\\hooks',
+    powershell:
+      '##### 进入配置文件存放目录： cd ${bk_bscp_app_temp_dir}\\files\n##### 进入前/后置脚本存放目录： cd ${bk_bscp_app_temp_dir}\\hooks',
   });
   const showContent = computed({
-    get: () => (formData.value.type === 'shell' ? formDataContent.value.shell : formDataContent.value.python),
+    get: () => {
+      return formDataContent.value[formData.value.type];
+    },
     set: (val) => {
-      formData.value.type === 'shell' ? (formDataContent.value.shell = val) : (formDataContent.value.python = val);
+      formDataContent.value[formData.value.type] = val;
     },
   });
   const isShowVariable = ref(true);
@@ -116,6 +123,11 @@
       {
         validator: (value: string) => value.length <= 64,
         message: t('不能超过64个字符'),
+        trigger: 'change',
+      },
+      {
+        validator: (value: string) => /^[\u4e00-\u9fa5A-Za-z0-9.\-_#%,:?!@$^+=\\[\]{}]+$/.test(value),
+        message: t('脚本名称有误，请重新输入'),
         trigger: 'change',
       },
     ],
@@ -155,8 +167,7 @@
   };
 
   const handleCreate = async () => {
-    formData.value.content =
-      formData.value.type === 'shell' ? formDataContent.value.shell : formDataContent.value.python;
+    formData.value.content = formDataContent.value[formData.value.type];
     await formRef.value.validate();
     try {
       pending.value = true;

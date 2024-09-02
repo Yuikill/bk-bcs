@@ -14,8 +14,6 @@ package tasks
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -28,7 +26,7 @@ import (
 	proto "github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/api/clustermanager"
 	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/cloudprovider"
 	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/common"
-	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/types"
+	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/remote/encrypt"
 	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/utils"
 )
 
@@ -72,24 +70,6 @@ func RegisterClusterKubeConfigTask(taskID string, stepName string) error {
 	// update step
 	if err := state.UpdateStepSucc(start, stepName); err != nil {
 		blog.Errorf("RegisterClusterKubeConfigTask[%s] task %s %s update to storage fatal", taskID, taskID, stepName)
-		return err
-	}
-
-	return nil
-}
-
-func importClusterCredential(ctx context.Context, data *cloudprovider.CloudDependBasicInfo) error { // nolint
-	configByte, err := base64.StdEncoding.DecodeString(data.Cluster.KubeConfig)
-	if err != nil {
-		return fmt.Errorf("failed to decode kubeconfig, %v", err)
-	}
-	typesConfig := &types.Config{}
-	err = json.Unmarshal(configByte, typesConfig)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal kubeconfig, %v", err)
-	}
-	err = cloudprovider.UpdateClusterCredentialByConfig(data.Cluster.ClusterID, typesConfig)
-	if err != nil {
 		return err
 	}
 
@@ -149,10 +129,11 @@ func ImportClusterNodesTask(taskID string, stepName string) error {
 }
 
 func importClusterInstances(data *cloudprovider.CloudDependBasicInfo) error {
-	kubeConfigByte, err := base64.StdEncoding.DecodeString(data.Cluster.KubeConfig)
+	kubeConfig, err := encrypt.Decrypt(nil, data.Cluster.KubeConfig)
 	if err != nil {
 		return fmt.Errorf("decode kube config failed: %v", err)
 	}
+	kubeConfigByte := []byte(kubeConfig)
 
 	config, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigByte)
 	if err != nil {

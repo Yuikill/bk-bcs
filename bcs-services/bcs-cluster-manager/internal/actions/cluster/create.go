@@ -30,6 +30,7 @@ import (
 	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/remote/encrypt"
 	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/store"
 	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/taskserver"
+	"github.com/Tencent/bk-bcs/bcs-services/bcs-cluster-manager/internal/utils"
 )
 
 const (
@@ -57,7 +58,7 @@ func NewCreateAction(model store.ClusterManagerModel, locker lock.DistributedLoc
 	}
 }
 
-func (ca *CreateAction) applyClusterCIDR(cls *cmproto.Cluster) error {
+func (ca *CreateAction) applyClusterCIDR(cls *cmproto.Cluster) error { // nolint
 	if len(cls.NetworkSettings.ClusterIPv4CIDR) > 0 ||
 		len(cls.NetworkSettings.ClusterIPv6CIDR) > 0 || len(cls.NetworkSettings.ServiceIPv4CIDR) > 0 {
 		return nil
@@ -103,6 +104,7 @@ func (ca *CreateAction) constructCluster(cloud *cmproto.Cloud) (*cmproto.Cluster
 		IsShared:                ca.req.IsShared,
 		Creator:                 ca.req.Creator,
 		CloudAccountID:          ca.req.CloudAccountID,
+		ClusterIamRole:          ca.req.ClusterIamRole,
 		CreateTime:              createTime,
 		UpdateTime:              createTime,
 		Status:                  common.StatusInitialization,
@@ -140,19 +142,19 @@ func (ca *CreateAction) constructCluster(cloud *cmproto.Cloud) (*cmproto.Cluster
 }
 
 func (ca *CreateAction) checkClusterWorkerNodes(cls *cmproto.Cluster) error { // nolint
-	for _, nodeIP := range ca.req.Nodes {
-		n, err := ca.transNodeIPToCloudNode(nodeIP)
-		if err != nil {
-			blog.Errorf("createCluster checkClusterWorkerNodes[%s] failed: %v", nodeIP, err)
-			continue
-		}
-		n.ClusterID = cls.ClusterID
-		n.Status = common.StatusInitialization
-		n.NodeTemplateID = ca.req.NodeTemplateID
+	nodes, err := ca.transNodeIPsToCloudNode(ca.req.Nodes)
+	if err != nil {
+		blog.Errorf("createCluster checkClusterWorkerNodes[%s] failed: %v", ca.req.Nodes, err)
+		return err
+	}
+	for _, node := range nodes {
+		node.ClusterID = cls.ClusterID
+		node.Status = common.StatusInitialization
+		node.NodeTemplateID = ca.req.NodeTemplateID
 
-		err = importClusterNode(ca.model, n)
+		err = importClusterNode(ca.model, node)
 		if err != nil {
-			blog.Errorf("createCluster checkClusterWorkerNodes[%s] failed: %v", nodeIP, err)
+			blog.Errorf("createCluster checkClusterWorkerNodes[%s] failed: %v", node.InnerIP, err)
 			continue
 		}
 	}
@@ -162,23 +164,24 @@ func (ca *CreateAction) checkClusterWorkerNodes(cls *cmproto.Cluster) error { //
 
 // checkClusterMasterNodes for check cloud node
 func (ca *CreateAction) checkClusterMasterNodes(cls *cmproto.Cluster) error {
-	// setting master node for storage
+	// setting master nodes for storage
 	cls.Master = make(map[string]*cmproto.Node)
-	for _, masterIP := range ca.req.Master {
-		node, err := ca.transNodeIPToCloudNode(masterIP)
-		if err != nil {
-			errMsg := fmt.Errorf("createCluster transNodeIPToCloudNode[%s] failed: %v", masterIP, err)
-			blog.Errorf(errMsg.Error())
-			return errMsg
-		}
-		cls.Master[masterIP] = node
+	nodes, err := ca.transNodeIPsToCloudNode(ca.req.Master)
+	if err != nil {
+		errMsg := fmt.Errorf("createCluster transNodeIPsToCloudNode[%v] failed: %v", ca.req.Master, err)
+		blog.Errorf(errMsg.Error())
+		return errMsg
+	}
+
+	for _, node := range nodes {
+		cls.Master[node.InnerIP] = node
 	}
 
 	return nil
 }
 
-// transNodeIPToCloudNode by req nodeIPs trans to cloud node
-func (ca *CreateAction) transNodeIPToCloudNode(ip string) (*cmproto.Node, error) {
+// transNodeIPsToCloudNode by req nodeIPs trans to cloud node
+func (ca *CreateAction) transNodeIPsToCloudNode(ips []string) ([]*cmproto.Node, error) {
 	nodeMgr, err := cloudprovider.GetNodeMgr(ca.cloud.CloudProvider)
 	if err != nil {
 		blog.Errorf("get cloudprovider %s NodeManager Cluster %s failed, %s",
@@ -197,17 +200,17 @@ func (ca *CreateAction) transNodeIPToCloudNode(ip string) (*cmproto.Node, error)
 	cmOption.Region = ca.req.Region
 
 	// cluster check instance if exist, validate nodes existence
-	node, err := nodeMgr.GetNodeByIP(ip, &cloudprovider.GetNodeOption{
+	nodes, err := nodeMgr.ListNodesByIP(ips, &cloudprovider.ListNodesOption{
 		Common:       cmOption,
 		ClusterVPCID: ca.req.VpcID,
 	})
 	if err != nil {
-		blog.Errorf("validate nodes %s existence failed, %s", ip, err.Error())
+		blog.Errorf("validate nodes %v existence failed, %s", ips, err.Error())
 		return nil, err
 	}
 
-	blog.Infof("get cloud[%s] IP[%s] to Node successfully", ca.cloud.CloudProvider, ip)
-	return node, nil
+	blog.Infof("get cloud[%s] IPs[%v] to Node successfully", ca.cloud.CloudProvider, ips)
+	return nodes, nil
 }
 
 // createClusterValidate create cluster validate
@@ -371,6 +374,13 @@ func (ca *CreateAction) createNodegroup(cls *cmproto.Cluster) error {
 					return fmt.Errorf("createNodegroup[%s] Encrypt KeyPublic failed", ng.Name)
 				}
 				ng.LaunchTemplate.KeyPair.KeyPublic = keyPublic
+			}
+			// base64 encode script file
+			if ng.NodeTemplate != nil {
+				ng.NodeTemplate.UserScript = utils.Base64Encode(ng.NodeTemplate.UserScript)
+				ng.NodeTemplate.PreStartUserScript = utils.Base64Encode(ng.NodeTemplate.PreStartUserScript)
+				ng.NodeTemplate.ScaleInPreScript = utils.Base64Encode(ng.NodeTemplate.ScaleInPreScript)
+				ng.NodeTemplate.ScaleInPostScript = utils.Base64Encode(ng.NodeTemplate.ScaleInPostScript)
 			}
 
 			err := ca.model.CreateNodeGroup(context.Background(), ng)

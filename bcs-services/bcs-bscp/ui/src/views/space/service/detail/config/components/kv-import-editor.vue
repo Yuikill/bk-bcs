@@ -1,6 +1,6 @@
 <template>
   <Teleport :disabled="!isOpenFullScreen" to="body">
-    <div :class="['config-content-editor', { fullscreen: isOpenFullScreen }]">
+    <div :class="['config-content-editor', { fullscreen: isOpenFullScreen, 'show-example': modelValue }]">
       <div class="editor-title">
         <div class="tips">
           <div class="title">{{ t('导入数据') }}</div>
@@ -184,23 +184,30 @@
       const kvContent = item.split(regex).map((item) => item.trim());
       const key = kvContent[0];
       const kv_type = kvContent[1] ? kvContent[1].toLowerCase() : '';
-      const value = kvContent[2];
-      const memo = kvContent[3] || '';
-      kvs.value.push({
-        key,
-        kv_type,
-        value,
-        memo,
-      });
+      let secret_type = '';
+      let value = '';
+      let secret_hidden = 'visible';
+      let memo = '';
+      if (kv_type === 'secret') {
+        // 敏感信息批量导入
+        secret_type = kvContent[2];
+        value = kvContent[3];
+        secret_hidden = kvContent[4];
+        memo = kvContent[5] || '';
+      } else {
+        // 普通kv导入
+        value = kvContent[2];
+        memo = kvContent[3] || '';
+      }
       if (kvContent.length < 3) {
         errorLine.value.push({
           errorInfo: t('请检查是否已正确使用分隔符'),
           lineNumber: index + 1,
         });
         hasSeparatorError = true;
-      } else if (kv_type !== 'string' && kv_type !== 'number') {
+      } else if (kv_type !== 'string' && kv_type !== 'number' && kv_type !== 'secret') {
         errorLine.value.push({
-          errorInfo: t('类型必须为 string 或者 number'),
+          errorInfo: t('类型必须为 string , number 或者secret'),
           lineNumber: index + 1,
         });
       } else if (kv_type === 'number' && !/^\d+(\.\d+)?$/.test(value)) {
@@ -213,9 +220,30 @@
           errorInfo: t('value不能为空'),
           lineNumber: index + 1,
         });
+      } else if (kv_type === 'secret') {
+        if (secret_type !== 'password' && secret_type !== 'secret_key' && secret_type !== 'token') {
+          errorLine.value.push({
+            errorInfo: t('敏感信息类型必须为password,secret_key,token'),
+            lineNumber: index + 1,
+          });
+        }
+        if (secret_hidden !== 'visible' && secret_hidden !== 'invisible') {
+          errorLine.value.push({
+            errorInfo: t('是否可见必须为visible或者invisible'),
+            lineNumber: index + 1,
+          });
+        }
       }
+      kvs.value.push({
+        key,
+        kv_type,
+        secret_type,
+        secret_hidden: secret_hidden === 'invisible',
+        value,
+        memo,
+      });
     });
-    emits('hasError', textContent.value && errorLine.value.length === 0);
+    emits('hasError', textContent.value && errorLine.value.length > 0);
     return hasSeparatorError;
   };
 
@@ -286,6 +314,26 @@
       width: 100vw;
       height: 100vh;
       z-index: 5000;
+      &.show-example {
+        :deep(.code-editor-wrapper) {
+          width: calc(100vw - 520px);
+        }
+        :deep(.example-wrap) {
+          position: absolute;
+          right: 0;
+          top: 0;
+          height: 100%;
+          .content {
+            height: calc(100% - 40px);
+            .example {
+              height: 100%;
+            }
+            .bk-textarea {
+              height: 100%;
+            }
+          }
+        }
+      }
     }
     .editor-title {
       display: flex;

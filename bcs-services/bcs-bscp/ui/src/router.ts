@@ -184,6 +184,14 @@ const routes = [
           },
         ],
       },
+      {
+        path: 'configuration_example/:appId?',
+        name: 'configuration-example',
+        meta: {
+          navModule: 'example',
+        },
+        component: () => import('./views/space/client/example/index.vue'),
+      },
     ],
   },
   {

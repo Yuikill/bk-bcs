@@ -408,6 +408,8 @@ func updateClusterInfo(cloudID string, opt *cloudprovider.GetClusterOption) (*pr
 		opt.Cluster.ExtraInfo[icommon.ImageProvider] = icommon.PublicImageProvider
 	}
 
+	//
+
 	return opt.Cluster, nil
 }
 
@@ -532,7 +534,7 @@ func (c *Cluster) DeleteNodesFromCluster(cls *proto.Cluster, nodes []*proto.Node
 	return task, nil
 }
 
-func skipGlobalRouterCIDR(cls *proto.Cluster) bool {
+func skipGlobalRouterCIDR(cls *proto.Cluster) bool { // nolint
 	if cls.ExtraInfo != nil {
 		v, ok := cls.ExtraInfo[api.GlobalRouteCIDRCheck]
 		if ok && v == "true" {
@@ -969,6 +971,18 @@ func (c *Cluster) CheckIfGetNodesFromCluster(ctx context.Context, cluster *proto
 	}
 
 	return true
+}
+
+// SwitchClusterNetwork switch cluster network mode
+func (c *Cluster) SwitchClusterNetwork(
+	cls *proto.Cluster, subnet *proto.SubnetSource, opt *cloudprovider.SwitchClusterNetworkOption) (*proto.Task, error) {
+	return nil, cloudprovider.ErrCloudNotImplemented
+}
+
+// CheckClusterNetworkStatus get cluster network
+func (c *Cluster) CheckClusterNetworkStatus(cloudID string,
+	opt *cloudprovider.CheckClusterNetworkStatusOption) (bool, error) {
+	return false, cloudprovider.ErrCloudNotImplemented
 }
 
 func getTkeClusterNetworkType(cluster *tke.Cluster) string {

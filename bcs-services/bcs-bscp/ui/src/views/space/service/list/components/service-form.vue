@@ -5,13 +5,21 @@
         v-model="localData.name"
         :placeholder="t('请输入2-32字符，只允许英文、数字、下划线、中划线且必须以英文、数字开头和结尾')"
         :disabled="editable"
-        @input="handleChange" />
+        @input="handleChange"
+        v-bk-tooltips="{
+          content: t('请输入2-32字符，只允许英文、数字、下划线、中划线且必须以英文、数字开头和结尾'),
+          disabled: locale === 'zh-cn',
+        }" />
     </bk-form-item>
     <bk-form-item :label="t('form_服务别名')" property="alias" required>
       <bk-input
         v-model="localData.alias"
         :placeholder="t('请输入2-128字符，只允许中文、英文、数字、下划线、中划线且必须以中文、英文、数字开头和结尾')"
-        @input="handleChange" />
+        @input="handleChange"
+        v-bk-tooltips="{
+          content: t('请输入2-128字符，只允许中文、英文、数字、下划线、中划线且必须以中文、英文、数字开头和结尾'),
+          disabled: locale === 'zh-cn',
+        }" />
     </bk-form-item>
     <bk-form-item :label="t('服务描述')" property="memo">
       <bk-input
@@ -24,19 +32,19 @@
         @input="handleChange" />
     </bk-form-item>
     <bk-form-item :label="t('数据格式')" :description="t('tips.config')">
-      <bk-radio-group v-model="localData.config_type" :disabled="editable" @change="handleConfigTypeChange">
+      <bk-radio-group v-model="localData.config_type" :disabled="editable">
         <bk-radio label="file">{{ t('文件型') }}</bk-radio>
         <bk-radio label="kv">{{ t('键值型') }}</bk-radio>
       </bk-radio-group>
     </bk-form-item>
-    <!-- @todo 补充编辑场景下，类型切换时的校验逻辑 -->
     <bk-form-item
       v-if="localData.config_type === 'kv'"
       :label="t('数据类型')"
-      property="kv_type"
-      :description="t('tips.type')">
-      <bk-select v-model="localData.data_type" @select="handleChange">
-        <bk-option :id="'any'" :name="t('任意类型')" />
+      property="data_type"
+      :description="t('tips.type')"
+      required>
+      <bk-select v-model="localData.data_type" class="type-select" @select="handleChange">
+        <bk-option id="any" :name="t('任意类型')" />
         <bk-option v-for="kvType in CONFIG_KV_TYPE" :key="kvType.id" :id="kvType.id" :name="kvType.name" />
       </bk-select>
     </bk-form-item>
@@ -48,7 +56,7 @@
   import { IServiceEditForm } from '../../../../../../types/service';
   import { CONFIG_KV_TYPE } from '../../../../../constants/config';
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const emits = defineEmits(['change']);
 
@@ -68,7 +76,7 @@
         message: t('最大长度32个字符'),
       },
       {
-        validator: (value: string) => /^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]?$/.test(value),
+        validator: (value: string) => /^[a-zA-Z0-9](?:[a-zA-Z0-9_-]*[a-zA-Z0-9])?$/.test(value),
         message: t('服务名称由英文、数字、下划线、中划线组成且以英文、数字开头和结尾'),
       },
     ],
@@ -99,11 +107,6 @@
     },
   );
 
-  const handleConfigTypeChange = () => {
-    localData.value.data_type = '';
-    handleChange();
-  };
-
   const handleChange = () => {
     emits('change', localData.value);
   };
@@ -114,3 +117,9 @@
     validate,
   });
 </script>
+
+<style lang="scss" scoped>
+  .type-select {
+    width: 240px;
+  }
+</style>
