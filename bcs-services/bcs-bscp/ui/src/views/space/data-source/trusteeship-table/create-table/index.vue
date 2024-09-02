@@ -108,6 +108,9 @@
         font-size: 12px;
         color: #979ba5;
       }
+      &:hover {
+        border: 1px solid #c4c6cc;
+      }
       &.active {
         color: #3a84ff;
         border: 1px solid #3a84ff;

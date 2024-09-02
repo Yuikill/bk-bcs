@@ -20,7 +20,7 @@
         </template>
       </bk-upload>
     </Card>
-    <TableStructureForm :is-manual-create="false" :bk-biz-id="props.bkBizId" />
+    <TableStructureForm :is-edit="false" :is-manual-create="false" :bk-biz-id="props.bkBizId" />
   </div>
 </template>
 

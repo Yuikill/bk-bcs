@@ -3,7 +3,7 @@
     <template #content>
       <div class="content-wrap">
         <div class="content-header">
-          <bk-button>{{ $t('导入') }}</bk-button>
+          <bk-button @click="isShowImportTable = true">{{ $t('导入') }}</bk-button>
           <bk-input class="search-input">
             <template #suffix>
               <Search class="search-input-icon" />
@@ -20,18 +20,23 @@
       </div>
     </template>
   </DetailLayout>
+  <ImportTable v-model:show="isShowImportTable" />
 </template>
 
 <script lang="ts" setup>
+  import { ref } from 'vue';
   import { Search } from 'bkui-vue/lib/icon';
   import DetailLayout from '../../component/detail-layout.vue';
   import Table from './table.vue';
+  import ImportTable from './import-table.vue';
 
   defineProps<{
     bkBizId: string;
   }>();
 
   const emits = defineEmits(['close']);
+
+  const isShowImportTable = ref(false);
 
   const handleClose = () => {
     emits('close');

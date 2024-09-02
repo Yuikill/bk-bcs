@@ -1,27 +1,28 @@
 <template>
   <bk-form ref="formRef" form-type="vertical" :model="localVal" :rules="rules">
-    <bk-form-item :label="t('配置项名称')" property="key" :required="true">
-      <bk-input v-model="localVal.key" :disabled="props.editMode" @input="change" :placeholder="t('请输入')" />
-    </bk-form-item>
+    <div class="key-and-type">
+      <bk-form-item :label="t('配置项名称')" property="key" :required="true">
+        <bk-input v-model="localVal.key" :disabled="props.editMode" @input="change" :placeholder="t('请输入')" />
+      </bk-form-item>
+      <bk-form-item :label="t('数据类型')" property="kv_type" :required="true" :description="typeDescription">
+        <bk-select
+          class="bk-select"
+          v-model="localVal.kv_type"
+          filterable
+          :disabled="selectDisabled"
+          :clearable="false">
+          <bk-option v-for="kvType in CONFIG_KV_TYPE" :key="kvType.id" :id="kvType.id" :name="kvType.name" />
+        </bk-select>
+      </bk-form-item>
+    </div>
     <bk-form-item :label="t('配置项描述')" property="memo">
       <bk-input v-model="localVal.memo" type="textarea" :maxlength="200" :placeholder="t('请输入')" @input="change" />
     </bk-form-item>
-    <bk-form-item :label="t('数据类型')" property="kv_type" :required="true" :description="typeDescription">
-      <bk-radio-group v-model="localVal.kv_type">
-        <bk-radio
-          v-for="kvType in CONFIG_KV_TYPE"
-          :key="kvType.id"
-          :label="kvType.id"
-          :disabled="radioDisabled(kvType.id)">
-          {{ kvType.name }}
-        </bk-radio>
-      </bk-radio-group>
-    </bk-form-item>
-    <bk-form-item :label="t('配置项值')" property="value" :required="true">
+    <KvTaleForm v-if="localVal.kv_type === 'table'" />
+    <bk-form-item v-else :label="t('配置项值')" property="value" :required="true">
       <bk-input
         v-if="localVal.kv_type === 'string' || localVal.kv_type === 'number'"
         v-model.trim="localVal!.value"
-        :placeholder="stringTypePlaceholder"
         @input="change" />
       <KvConfigContentEditor
         v-else
@@ -41,6 +42,7 @@
   import { IConfigKvEditParams } from '../../../../../../../../types/config';
   import useServiceStore from '../../../../../../../store/service';
   import { storeToRefs } from 'pinia';
+  import KvTaleForm from './kv-table-form.vue';
 
   const serviceStore = useServiceStore();
   const { appData } = storeToRefs(serviceStore);
@@ -72,19 +74,7 @@
     return '';
   });
 
-  const radioDisabled = computed(() => (kvTypeId: string) => {
-    if (appData.value.spec.data_type !== 'any' || props.editMode) {
-      return kvTypeId !== localVal.value.kv_type;
-    }
-    return false;
-  });
-
-  const stringTypePlaceholder = computed(() => {
-    if (localVal.value.kv_type === 'string') {
-      return t('请输入(仅支持大小不超过2M)');
-    }
-    return t('请输入');
-  });
+  const selectDisabled = computed(() => appData.value.spec.data_type !== 'any' || props.editMode);
 
   const rules = {
     key: [
@@ -149,4 +139,13 @@
   defineExpose({ validate });
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+  .key-and-type {
+    display: flex;
+    justify-content: space-between;
+  }
+  .bk-input,
+  .bk-select {
+    width: 428px;
+  }
+</style>

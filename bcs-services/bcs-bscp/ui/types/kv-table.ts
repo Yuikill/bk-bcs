@@ -13,6 +13,7 @@ export interface IFiledsItem {
   enumList?: IEnumItem[];
   enumType?: string;
   isShowSettingEnumPopover?: boolean;
+  status?: string;
 }
 
 // 字段设置枚举类型
