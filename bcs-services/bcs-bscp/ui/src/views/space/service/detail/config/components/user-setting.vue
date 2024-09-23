@@ -1,4 +1,5 @@
 <template>
+  <div class="user-settings-label">权限设置</div>
   <div class="user-settings-wrap">
     <div class="user-content">
       <bk-form-item :label="$t('文件权限')" property="privilege" required>
@@ -54,18 +55,26 @@
             :list="userList"
             class="bk-select"
             :filterable="false"
+            display-key="name"
+            id-key="name"
             allow-create
-            @select="change">
+            @select="handleSelectUserOrGroup('user', $event)">
             <template #optionRender="{ item }">
               <div class="option-item">
-                <span>{{ item.label }}</span>
-                <span class="bk-bscp-icon icon-close-line close" @click.stop="handleDeleteUser()" />
+                <span>{{ item.name }}</span>
+                <span
+                  v-if="!item.read_only"
+                  class="bk-bscp-icon icon-close-line close"
+                  @click.stop="handleDeleteUser()" />
               </div>
             </template>
           </bk-select>
         </bk-form-item>
-        <bk-form-item :label="'UID'" property="user">
-          <bk-input v-model="localVal.UID" :placeholder="$t('请输入')" @input="change"></bk-input>
+        <bk-form-item :label="'UID'" :required="true">
+          <bk-input
+            v-model="localVal.UID"
+            :disabled="selectUser?.read_only"
+            @input="change"></bk-input>
         </bk-form-item>
         <bk-form-item :label="$t('用户组')" :placeholder="$t('请输入')" property="user_group" :required="true">
           <bk-select
@@ -74,17 +83,25 @@
             class="bk-select"
             :filterable="false"
             allow-create
-            @select="change">
+            display-key="name"
+            id-key="name"
+            @select="handleSelectUserOrGroup('group', $event)">
             <template #optionRender="{ item }">
               <div class="option-item">
-                <span>{{ item.label }}</span>
-                <span class="bk-bscp-icon icon-close-line close" @click.stop="handleDeleteUserGroup()" />
+                <span>{{ item.name }}</span>
+                <span
+                  v-if="!item.read_only"
+                  class="bk-bscp-icon icon-close-line close"
+                  @click.stop="handleDeleteUserGroup()" />
               </div>
             </template>
           </bk-select>
         </bk-form-item>
-        <bk-form-item :label="'GID'" property="user">
-          <bk-input v-model="localVal.GID" :placeholder="$t('请输入')" @input="change"></bk-input>
+        <bk-form-item :label="'GID'" :required="true">
+          <bk-input
+            v-model="localVal.GID"
+            :disabled="selectUserGroup?.read_only"
+            @input="change" />
         </bk-form-item>
       </div>
     </div>
@@ -92,10 +109,20 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed } from 'vue';
+  import { ref, computed, onMounted } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { getUserPrivileges, getUserGroupPrivileges } from '../../../../../../api/config';
+  import { IUserPrivilege } from '../../../../../../../types/config';
 
   const { t } = useI18n();
+
+  const props = defineProps<{
+    bkBizId: string;
+    id: number; // 服务ID或者模板空间ID
+    isTpl?: boolean; // 是否为模板配置文件
+  }>();
+
+  const emits = defineEmits(['change']);
 
   const showPrivilegeErrorTips = ref(false);
   const privilegeInputVal = ref('');
@@ -116,19 +143,18 @@
     privilege: '',
     user: '',
     user_group: '',
-    UID: 0,
-    GID: 0,
+    UID: '',
+    GID: '',
+  });
+  const userList = ref<IUserPrivilege[]>([]);
+  const userGroupList = ref<IUserPrivilege[]>([]);
+
+  onMounted(async () => {
+    await handleGetPrivilegesList();
   });
 
-  const userList = ref([
-    { label: 'root', value: 'root' },
-    { label: 'admin', value: 'admin' },
-  ]);
-
-  const userGroupList = ref([
-    { label: 'root', value: 'root' },
-    { label: 'admin', value: 'admin' },
-  ]);
+  const selectUser = computed(() => userList.value.find((item) => item.name === localVal.value.user));
+  const selectUserGroup = computed(() => userGroupList.value.find((item) => item.name === localVal.value.user_group));
 
   // 权限输入框失焦后，校验输入是否合法，如不合法回退到上次输入
   const handlePrivilegeInputBlur = () => {
@@ -174,7 +200,31 @@
     change();
   };
 
-  const change = () => {};
+  // 获取用户和用户组列表
+  const handleGetPrivilegesList = async () => {
+    try {
+      const userGroupListRes = await getUserGroupPrivileges(props.bkBizId, props.id, { all: true, start: 0 });
+      const userListRes = await getUserPrivileges(props.bkBizId, props.id, { all: true, start: 0 });
+      userGroupList.value = userGroupListRes.data.details;
+      userList.value = userListRes.data.details;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // 选择用户或用户组
+  const handleSelectUserOrGroup = (type: 'user' | 'group', val: string) => {
+    if (type === 'user') {
+      localVal.value.UID = String(userList.value.find((i) => i.name === val)?.id);
+    } else {
+      localVal.value.GID = String(userGroupList.value.find((i) => i.name === val)?.id);
+    }
+    change();
+  };
+
+  const change = () => {
+    emits('change', localVal.value);
+  };
 
   const handleDeleteUser = () => {};
 
@@ -182,6 +232,11 @@
 </script>
 
 <style scoped lang="scss">
+  .user-settings-label {
+    font-size: 12px;
+    color: #63656e;
+    margin-bottom: 6px;
+  }
   .user-settings-wrap {
     padding: 12px 16px 0px 16px;
     background: #f5f7fa;

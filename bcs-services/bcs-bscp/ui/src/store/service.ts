@@ -1,6 +1,7 @@
 // 服务实例的pinia数据
 import { ref, computed } from 'vue';
 import { defineStore, storeToRefs } from 'pinia';
+import { IConfigPrivilegeForm } from '../../types/config';
 import useGlobalStore from './global';
 
 interface IAppData {
@@ -48,10 +49,12 @@ export default defineStore('service', () => {
   };
 
   // 保留新建文件用户输入文件权限
-  const lastCreatePermission = ref({
+  const lastCreatePermission = ref<IConfigPrivilegeForm>({
     privilege: '644',
     user: 'root',
     user_group: 'root',
+    UID: '0',
+    GID: '0',
   });
 
   // 置顶的ids

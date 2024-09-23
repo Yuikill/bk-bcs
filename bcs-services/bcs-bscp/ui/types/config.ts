@@ -85,6 +85,8 @@ export interface IConfigEditParams {
   fileAP?: string;
   revision_name?: string;
   template_revision_id?: number;
+  UID?: string;
+  GID?: string;
 }
 
 // kv配置文件编辑表单参数
@@ -271,4 +273,22 @@ export interface ITemplatePkgs {
   template_space_name: string;
   template_space_id: number;
   template_show_title: string;
+}
+
+// 权限用户或用户组列表
+export interface IUserPrivilege {
+  id: number;
+  name: string;
+  privilege_type: string;
+  read_only: boolean;
+}
+
+// 权限设置表单内容
+
+export interface IConfigPrivilegeForm {
+  user: string;
+  user_group: string;
+  privilege: string;
+  UID: string;
+  GID: string;
 }

@@ -56,6 +56,7 @@
   const formRef = ref();
   const isFormChange = ref(false);
   const configForm = ref<IConfigEditParams>(getConfigEditParams());
+
   watch(
     () => props.show,
     (val) => {
@@ -69,12 +70,14 @@
 
   const handleFormChange = (data: IConfigEditParams, configContent: IFileConfigContentSummary | string) => {
     configForm.value = data;
-    const { privilege, user, user_group } = data;
+    const { privilege, user, user_group, UID, GID } = data;
     serviceStore.$patch((state) => {
       state.lastCreatePermission = {
         privilege: privilege as string,
         user: user as string,
         user_group: user_group as string,
+        UID: UID as string,
+        GID: GID as string,
       };
     });
     content.value = configContent;

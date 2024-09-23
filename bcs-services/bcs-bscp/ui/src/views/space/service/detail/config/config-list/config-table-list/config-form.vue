@@ -18,12 +18,12 @@
     </bk-form-item>
     <bk-form-item :label="t('配置文件格式')">
       <bk-radio-group v-model="localVal.file_type" :required="true" @change="change">
-        <bk-radio v-for="typeItem in CONFIG_FILE_TYPE" :key="typeItem.id" :label="typeItem.id" :disabled="isEdit">{{
-          typeItem.name
-        }}</bk-radio>
+        <bk-radio v-for="typeItem in CONFIG_FILE_TYPE" :key="typeItem.id" :label="typeItem.id" :disabled="isEdit">
+          {{ typeItem.name }}
+        </bk-radio>
       </bk-radio-group>
     </bk-form-item>
-    <UserSetting />
+    <UserSetting :bk-biz-id="props.bkBizId" :id="props.id" :is-tpl="props.isTpl" @change="handlePrivilegeChange" />
     <div v-if="isWindowsAgent" class="user-tips">
       <info-line class="icon" />
       <span>{{ t('对于Windows客户端，以上文件权限、用户及用户组设置不生效，可在后置脚本中处理文件权限') }}</span>
@@ -104,7 +104,11 @@
   import { TextFill, Done, Info, Error, Spinner, InfoLine } from 'bkui-vue/lib/icon';
   import BkMessage from 'bkui-vue/lib/message';
   import { cloneDeep } from 'lodash';
-  import { IConfigEditParams, IFileConfigContentSummary } from '../../../../../../../../types/config';
+  import {
+    IConfigEditParams,
+    IFileConfigContentSummary,
+    IConfigPrivilegeForm,
+  } from '../../../../../../../../types/config';
   import { IVariableEditParams } from '../../../../../../../../types/variable';
   import {
     updateConfigContent,
@@ -443,6 +447,12 @@
       localVal.value.fileAP = `/${localVal.value.fileAP}`;
     }
     change();
+  };
+
+  // 权限内容修改
+  const handlePrivilegeChange = (privilegeForm: IConfigPrivilegeForm) => {
+    localVal.value = { ...localVal.value, ...privilegeForm };
+    privilegeInputVal.value = privilegeForm.privilege;
   };
 
   defineExpose({

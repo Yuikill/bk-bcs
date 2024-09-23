@@ -675,3 +675,25 @@ export const createVersionNameCheck = (bizId: string, appId: number, name: strin
  */
 export const importConfigFromTemplate = (bizId: string, appId: number, query: any) =>
   http.post(`/config/biz/${bizId}/apps/${appId}/template_bindings/import_template_set`, query);
+
+/**
+ * 获取权限内置用户列表
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ * @param bindingId 模板和服务绑定关系ID
+ * @param params 更新参数
+ * @returns
+ */
+export const getUserPrivileges = (bizId: string, appId: number, params: ICommonQuery) =>
+  http.get(`/config/biz/${bizId}/apps/${appId}/user_group_privileges`, { params });
+
+/**
+ * 获取权限内置用户组列表
+ * @param bizId 业务ID
+ * @param appId 应用ID
+ * @param bindingId 模板和服务绑定关系ID
+ * @param params 更新参数
+ * @returns
+ */
+export const getUserGroupPrivileges = (bizId: string, appId: number, params: ICommonQuery) =>
+  http.get(`/config/biz/${bizId}/apps/${appId}/user_privileges`, { params });
