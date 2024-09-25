@@ -1,5 +1,5 @@
 <template>
-  <div class="user-settings-label">权限设置</div>
+  <div class="user-settings-label">{{ t('权限设置') }}</div>
   <div class="user-settings-wrap">
     <div class="user-content">
       <bk-form-item :label="$t('文件权限')" property="privilege" required>
@@ -57,6 +57,7 @@
             :filterable="false"
             display-key="name"
             id-key="name"
+            :clearable="false"
             allow-create
             @select="handleSelectUserOrGroup('user', $event)">
             <template #optionRender="{ item }">
@@ -71,20 +72,18 @@
           </bk-select>
         </bk-form-item>
         <bk-form-item :label="'UID'" :required="true">
-          <bk-input
-            v-model="localVal.UID"
-            :disabled="selectUser?.read_only"
-            @input="change"></bk-input>
+          <bk-input v-model="localVal.UID" :disabled="selectUser?.read_only"></bk-input>
         </bk-form-item>
-        <bk-form-item :label="$t('用户组')" :placeholder="$t('请输入')" property="user_group" :required="true">
+        <bk-form-item :label="$t('用户组')" property="user_group" :required="true">
           <bk-select
             v-model="localVal.user_group"
             :list="userGroupList"
             class="bk-select"
-            :filterable="false"
+            :search-placeholder="$t('请输入')"
             allow-create
             display-key="name"
             id-key="name"
+            :clearable="false"
             @select="handleSelectUserOrGroup('group', $event)">
             <template #optionRender="{ item }">
               <div class="option-item">
@@ -98,21 +97,27 @@
           </bk-select>
         </bk-form-item>
         <bk-form-item :label="'GID'" :required="true">
-          <bk-input
-            v-model="localVal.GID"
-            :disabled="selectUserGroup?.read_only"
-            @input="change" />
+          <bk-input v-model="localVal.GID" :disabled="selectUserGroup?.read_only" />
         </bk-form-item>
       </div>
+      <p v-if="isShowTips" class="tips">
+        {{ t('若需在') }}<span>{{ $t('容器') }} </span>{{ t('中拉取配置文件并设置权限，') }}
+        <span>{{ t('请配置 UID 和 GID。') }} </span><br />
+        {{
+          t(
+            '因为设置文件权限操作不是在业务容器中执行，而是在 Sidecar 容器中执行，因此需要在 Sidecar容器中创建相应的用户（UID）、用户组（GID）。如果无需使用容器客户端可不配置 UID 和 GID',
+          )
+        }}
+      </p>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, onMounted } from 'vue';
+  import { ref, computed, onMounted, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { getUserPrivileges, getUserGroupPrivileges } from '../../../../../../api/config';
-  import { IUserPrivilege } from '../../../../../../../types/config';
+  import { IUserPrivilege, IConfigPrivilegeForm } from '../../../../../../../types/config';
 
   const { t } = useI18n();
 
@@ -120,12 +125,13 @@
     bkBizId: string;
     id: number; // 服务ID或者模板空间ID
     isTpl?: boolean; // 是否为模板配置文件
+    form: IConfigPrivilegeForm;
   }>();
 
   const emits = defineEmits(['change']);
 
   const showPrivilegeErrorTips = ref(false);
-  const privilegeInputVal = ref('');
+  const privilegeInputVal = ref(props.form.privilege);
 
   const PRIVILEGE_GROUPS = [t('属主（own）'), t('属组（group）'), t('其他人（other）')];
   const PRIVILEGE_VALUE_MAP = {
@@ -139,22 +145,28 @@
     7: [1, 2, 4],
   };
 
-  const localVal = ref({
-    privilege: '',
-    user: '',
-    user_group: '',
-    UID: '',
-    GID: '',
-  });
+  const localVal = ref(props.form);
   const userList = ref<IUserPrivilege[]>([]);
   const userGroupList = ref<IUserPrivilege[]>([]);
 
+  watch(
+    () => localVal.value,
+    () => {
+      emits('change', localVal.value);
+    },
+    { deep: true },
+  );
+
   onMounted(async () => {
     await handleGetPrivilegesList();
+    localVal.value.UID = String(selectUser.value!.id);
+    localVal.value.GID = String(selectUserGroup.value!.id);
   });
 
   const selectUser = computed(() => userList.value.find((item) => item.name === localVal.value.user));
   const selectUserGroup = computed(() => userGroupList.value.find((item) => item.name === localVal.value.user_group));
+
+  const isShowTips = ref(false);
 
   // 权限输入框失焦后，校验输入是否合法，如不合法回退到上次输入
   const handlePrivilegeInputBlur = () => {
@@ -162,7 +174,6 @@
     if (/^[0-7]{3}$/.test(val)) {
       localVal.value.privilege = val;
       showPrivilegeErrorTips.value = false;
-      change();
     } else {
       privilegeInputVal.value = String(localVal.value.privilege);
       showPrivilegeErrorTips.value = true;
@@ -197,7 +208,6 @@
     privilegeInputVal.value = newVal;
     localVal.value.privilege = newVal;
     showPrivilegeErrorTips.value = false;
-    change();
   };
 
   // 获取用户和用户组列表
@@ -219,11 +229,7 @@
     } else {
       localVal.value.GID = String(userGroupList.value.find((i) => i.name === val)?.id);
     }
-    change();
-  };
-
-  const change = () => {
-    emits('change', localVal.value);
+    isShowTips.value = true;
   };
 
   const handleDeleteUser = () => {};
@@ -238,7 +244,7 @@
     margin-bottom: 6px;
   }
   .user-settings-wrap {
-    padding: 12px 16px 0px 16px;
+    padding: 12px 16px 16px 16px;
     background: #f5f7fa;
     border-radius: 2px;
     .user-content {
@@ -255,6 +261,12 @@
       justify-content: space-between;
       :deep(.bk-input) {
         width: 114px;
+      }
+      :deep(.bk-form-item) {
+        margin-bottom: 0;
+        .bk-form-error {
+          position: inherit;
+        }
       }
     }
   }
@@ -337,6 +349,16 @@
     align-items: center;
     .bk-bscp-icon:hover {
       color: #3a84ff;
+    }
+  }
+
+  .tips {
+    color: #979ba5;
+    font-size: 12px;
+    line-height: 20px;
+    margin: 8px 0 0 0;
+    span {
+      color: #ff9c01;
     }
   }
 </style>

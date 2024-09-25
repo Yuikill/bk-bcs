@@ -23,7 +23,12 @@
         </bk-radio>
       </bk-radio-group>
     </bk-form-item>
-    <UserSetting :bk-biz-id="props.bkBizId" :id="props.id" :is-tpl="props.isTpl" @change="handlePrivilegeChange" />
+    <UserSetting
+      :bk-biz-id="props.bkBizId"
+      :id="props.id"
+      :is-tpl="props.isTpl"
+      :form="privilegeForm as IConfigPrivilegeForm"
+      @change="handlePrivilegeChange" />
     <div v-if="isWindowsAgent" class="user-tips">
       <info-line class="icon" />
       <span>{{ t('对于Windows客户端，以上文件权限、用户及用户组设置不生效，可在后置脚本中处理文件权限') }}</span>
@@ -83,7 +88,7 @@
       <template #label>
         <div class="config-content-label">
           <span>{{ t('配置内容') }}</span>
-          <info v-bk-tooltips="{ content: t('tips.createConfig'), placement: 'top' }" fill="#3a84ff" />
+          <info v-bk-tooltips="{ content: t('tips.createConfig'), placement: 'top' }" fill="#3a84ff" class="icon" />
         </div>
       </template>
       <ConfigContentEditor
@@ -96,7 +101,7 @@
   </bk-form>
 </template>
 <script setup lang="ts">
-  import { ref, watch, onMounted } from 'vue';
+  import { ref, watch, onMounted, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import SHA256 from 'crypto-js/sha256';
   import WordArray from 'crypto-js/lib-typedarrays';
@@ -155,7 +160,6 @@
 
   const emits = defineEmits(['change', 'update:fileUploading']);
   const localVal = ref({ ...props.config, fileAP: '' });
-  const privilegeInputVal = ref('');
   const stringContent = ref('');
   const fileContent = ref<IFileConfigContentSummary | File>();
   const uploadFileSignature = ref(''); // 新上传文件的sha256
@@ -181,15 +185,15 @@
       {
         required: true,
         validator: () => {
-          const type = typeof privilegeInputVal.value;
-          return type === 'number' || (type === 'string' && privilegeInputVal.value.length > 0);
+          const type = typeof localVal.value.privilege;
+          return type === 'number' || (type === 'string' && localVal.value.privilege!.length > 0);
         },
         message: t('文件权限 不能为空'),
         trigger: 'change',
       },
       {
         validator: () => {
-          const privilege = parseInt(privilegeInputVal.value[0], 10);
+          const privilege = parseInt(localVal.value.privilege![0], 10);
           return privilege >= 4;
         },
         message: t('文件own必须有读取权限'),
@@ -219,13 +223,16 @@
     ],
   };
 
-  watch(
-    () => props.config.privilege,
-    (val) => {
-      privilegeInputVal.value = val as string;
-    },
-    { immediate: true },
-  );
+  const privilegeForm = computed(() => {
+    const { privilege, user, user_group, UID, GID } = localVal.value;
+    return {
+      privilege,
+      user,
+      user_group,
+      UID,
+      GID,
+    };
+  });
 
   watch(
     () => props.config,
@@ -452,7 +459,6 @@
   // 权限内容修改
   const handlePrivilegeChange = (privilegeForm: IConfigPrivilegeForm) => {
     localVal.value = { ...localVal.value, ...privilegeForm };
-    privilegeInputVal.value = privilegeForm.privilege;
   };
 
   defineExpose({
@@ -553,6 +559,9 @@
     span {
       margin-right: 5px;
     }
+    .icon {
+      font-size: 14px;
+    }
   }
   .file-down-loading {
     width: 100%;
@@ -565,6 +574,11 @@
         color: #979ba5;
         font-size: 12px;
       }
+    }
+  }
+  .type-group {
+    :deep(.bk-radio-label) {
+      font-size: 12px;
     }
   }
 </style>

@@ -133,9 +133,75 @@
             </bk-popover>
           </div>
         </div>
+        <div class="th-cell uid">
+          <div class="th-cell-edit">
+            <span class="required">UID</span>
+            <bk-popover
+              ext-cls="popover-wrap"
+              theme="light"
+              trigger="manual"
+              placement="bottom"
+              :is-show="batchSet.isShowUserPop">
+              <edit-line class="edit-line" @click="batchSet.isShowUserPop = true" />
+              <template #content>
+                <div class="pop-wrap" v-click-outside="() => (batchSet.isShowUserPop = false)">
+                  <div class="pop-content">
+                    <div class="pop-title">{{ t('批量设置用户') }}</div>
+                    <bk-input v-model="batchSet.user" :placeholder="t('请输入')"></bk-input>
+                  </div>
+                  <div class="pop-footer">
+                    <div class="button">
+                      <bk-button
+                        theme="primary"
+                        style="margin-right: 8px; width: 80px"
+                        size="small"
+                        @click="handleConfirmPop('user')">
+                        {{ t('确定') }}
+                      </bk-button>
+                      <bk-button size="small" @click="handleCancelPop">{{ t('取消') }}</bk-button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </bk-popover>
+          </div>
+        </div>
         <div class="th-cell user-group">
           <div class="th-cell-edit">
             <span class="required">{{ t('用户组') }}</span>
+            <bk-popover
+              ext-cls="popover-wrap"
+              theme="light"
+              trigger="manual"
+              placement="bottom"
+              :is-show="batchSet.isShowUserGroupPop">
+              <edit-line class="edit-line" @click="batchSet.isShowUserGroupPop = true" />
+              <template #content>
+                <div class="pop-wrap" v-click-outside="() => (batchSet.isShowUserGroupPop = false)">
+                  <div class="pop-content">
+                    <div class="pop-title">{{ t('批量设置用户组') }}</div>
+                    <bk-input v-model="batchSet.user_group" :placeholder="t('请输入')"></bk-input>
+                  </div>
+                  <div class="pop-footer">
+                    <div class="button">
+                      <bk-button
+                        theme="primary"
+                        style="margin-right: 8px; width: 80px"
+                        size="small"
+                        @click="handleConfirmPop('user_group')">
+                        {{ t('确定') }}
+                      </bk-button>
+                      <bk-button size="small" @click="handleCancelPop">{{ t('取消') }}</bk-button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </bk-popover>
+          </div>
+        </div>
+        <div class="th-cell gid">
+          <div class="th-cell-edit">
+            <span class="required"> GID </span>
             <bk-popover
               ext-cls="popover-wrap"
               theme="light"
@@ -208,9 +274,43 @@
           </div>
           <div class="td-cell-editable td-cell user" :class="{ change: isContentChange(item.id, 'user') }">
             <bk-input v-model="item.user" :placeholder="t('请输入')"></bk-input>
+            <bk-select
+              v-model="item.user"
+              :list="userList"
+              class="bk-select"
+              allow-create
+              :search-placeholder="$t('请输入')"
+              @select="handleSelectUser"
+              @change="handleUserChange">
+              <template #optionRender="{ userItem }">
+                <div class="option-item">
+                  <span>{{ userItem.label }}</span>
+                  <span class="bk-bscp-icon icon-close-line close" @click.stop="handleDeleteUser()" />
+                </div>
+              </template>
+            </bk-select>
+          </div>
+          <div class="td-cell-editable td-cell uid" :class="{ change: isContentChange(item.id, 'user') }">
+            <bk-input v-model="item.user" :placeholder="t('请输入')"></bk-input>
           </div>
           <div class="td-cell-editable td-cell user-group" :class="{ change: isContentChange(item.id, 'user_group') }">
-            <bk-input v-model="item.user_group" :placeholder="t('请输入')"></bk-input>
+            <bk-select
+              v-model="item.user_group"
+              :list="userGroupList"
+              class="bk-select"
+              :search-placeholder="$t('请输入')"
+              allow-create
+              @select="change">
+              <template #optionRender="{ userGroup }">
+                <div class="option-item">
+                  <span>{{ userGroup.label }}</span>
+                  <span class="bk-bscp-icon icon-close-line close" @click.stop="handleDeleteUserGroup()" />
+                </div>
+              </template>
+            </bk-select>
+          </div>
+          <div class="td-cell-editable td-cell gid" :class="{ change: isContentChange(item.id, 'user') }">
+            <bk-input v-model="item.user" :placeholder="t('请输入')"></bk-input>
           </div>
           <div class="td-cell-delete delete td-cell">
             <i class="bk-bscp-icon icon-reduce delete-icon" @click="handleDeleteConfig(index)"></i>
@@ -254,7 +354,15 @@
     isShowPrivilege: false,
     isShowPrivilegeError: false,
   });
+  const userList = ref([
+    { label: 'root', value: 'root' },
+    { label: 'admin', value: 'admin' },
+  ]);
 
+  const userGroupList = ref([
+    { label: 'root', value: 'root' },
+    { label: 'admin', value: 'admin' },
+  ]);
   const data = ref<IConfigImportItem[]>([]);
   const initData = ref<IConfigImportItem[]>([]);
   const expand = ref(true);
@@ -451,31 +559,37 @@
     }
   }
   .table-container {
-    width: 100%;
     font-size: 12px;
     line-height: 20px;
     border: 1px solid #dcdee5;
+    overflow-x: auto;
     .table-head {
+      width: 1065px;
       display: flex;
     }
     .table-row {
       display: flex;
+      width: 1065px;
     }
     .table-body {
       max-height: 400px;
+      width: 1065px;
     }
     .th-cell {
+      display: flex;
+      align-items: center;
       padding-left: 16px;
       height: 42px;
       color: #313238;
       background: #fafbfd;
       border-bottom: none;
       text-align: left;
-      line-height: 42px;
       .th-cell-edit {
         display: flex;
         justify-content: space-between;
         padding-right: 16px;
+        align-items: center;
+        width: 100%;
         .edit-line {
           color: #3a84ff;
           cursor: pointer;
@@ -510,7 +624,9 @@
     .privilege {
       width: 100px;
     }
-    .user {
+    .user,
+    .uid,
+    .gid {
       width: 78px;
     }
     .user-group {

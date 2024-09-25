@@ -70,14 +70,12 @@
 
   const handleFormChange = (data: IConfigEditParams, configContent: IFileConfigContentSummary | string) => {
     configForm.value = data;
-    const { privilege, user, user_group, UID, GID } = data;
+    const { privilege, user, user_group } = data;
     serviceStore.$patch((state) => {
       state.lastCreatePermission = {
         privilege: privilege as string,
         user: user as string,
         user_group: user_group as string,
-        UID: UID as string,
-        GID: GID as string,
       };
     });
     content.value = configContent;
