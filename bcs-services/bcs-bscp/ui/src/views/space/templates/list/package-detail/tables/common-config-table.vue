@@ -35,14 +35,14 @@
             <across-check-box :checked="isChecked(row)" :handle-change="() => handleSelectionChange(row)" />
           </template>
         </bk-table-column>
-        <bk-table-column :label="t('配置文件名')">
+        <bk-table-column :label="t('配置文件名')" :show-overflow-tooltip="true">
           <template #default="{ row }">
-            <div v-if="row.spec" v-overflow-title class="config-name" @click="handleViewConfig(row)">
+            <span v-if="row.spec" class="config-name" @click="handleViewConfig(row)">
               {{ fileAP(row) }}
-            </div>
+            </span>
           </template>
         </bk-table-column>
-        <bk-table-column :label="t('配置文件描述')" prop="spec.memo">
+        <bk-table-column :label="t('配置文件描述')" prop="spec.memo" :show-overflow-tooltip="true">
           <template #default="{ row }">
             <span v-if="row.spec">{{ row.spec.memo || '--' }}</span>
           </template>
@@ -305,6 +305,9 @@
     const res = await props.getConfigList(params);
     list.value = res.details;
     pagination.value.count = res.count;
+    templateStore.$patch((state) => {
+      state.countOfTemplatesForCurrentPackage = res.count;
+    });
     listLoading.value = false;
     const ids = list.value.map((item) => item.id);
     citeByPkgsList.value = [];

@@ -4,12 +4,17 @@
       <ClientHeader :title="t('客户端查询')" @search="loadList" />
     </div>
     <div v-if="appId" class="content">
-      <BatchRetryBtn
-        :bk-biz-id="bkBizId"
-        :app-id="appId"
-        :selections="selectedClient"
-        :is-across-checked="isAcrossChecked"
-        @retried="handleRetryConfirm" />
+      <div class="operation-btns">
+        <bk-button class="refresh-btn" @click="loadList">
+          <right-turn-line class="icon" />
+        </bk-button>
+        <BatchRetryBtn
+          :bk-biz-id="bkBizId"
+          :app-id="appId"
+          :selections="selectedClient"
+          :is-across-checked="isAcrossChecked"
+          @retried="handleRetryConfirm" />
+      </div>
       <bk-loading style="min-height: 100px" :loading="listLoading">
         <bk-table
           ref="tableRef"
@@ -24,11 +29,17 @@
           @page-limit-change="handlePageLimitChange"
           @page-value-change="loadList(true)"
           @column-filter="handleFilter"
+          @column-sort="handleSort"
           @setting-change="handleSettingsChange">
           <template #prepend>
             <render-table-tip />
           </template>
-          <bk-table-column :min-width="80" :width="80" :label="renderSelection" :show-overflow-tooltip="false">
+          <bk-table-column
+            :min-width="80"
+            fixed="left"
+            :width="80"
+            :label="renderSelection"
+            :show-overflow-tooltip="false">
             <template #default="{ row }">
               <across-check-box
                 :checked="isChecked(row)"
@@ -104,6 +115,21 @@
                   fill="#979BA5"
                   v-bk-tooltips="{ content: getErrorDetails(row.client.spec) }" />
               </div>
+            </template>
+          </bk-table-column>
+          <bk-table-column
+            v-if="selectedShowColumn.includes('pull-time')"
+            :label="t('最后一次拉取配置耗时')"
+            :width="200"
+            :sort="true">
+            <template #default="{ row }">
+              <span v-if="row.client">
+                {{
+                  row.client.spec.total_seconds > 1
+                    ? `${Math.round(row.client.spec.total_seconds)}s`
+                    : `${Math.round(row.client.spec.total_seconds * 1000)}ms`
+                }}
+              </span>
             </template>
           </bk-table-column>
           <!-- <bk-table-column label="附加信息" :width="244"></bk-table-column> -->
@@ -240,7 +266,7 @@
 <script lang="ts" setup>
   import { ref, watch, onBeforeMount, onBeforeUnmount, computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import { Share, InfoLine, Spinner } from 'bkui-vue/lib/icon';
+  import { Share, InfoLine, Spinner, RightTurnLine } from 'bkui-vue/lib/icon';
   import { storeToRefs } from 'pinia';
   import { Tag } from 'bkui-vue';
   import { getClientQueryList } from '../../../../api/client';
@@ -321,6 +347,7 @@
   ];
   const onlineStatusFilterChecked = ref<string[]>([]);
   const pollTimer = ref(0);
+  const updateSortType = ref('null');
 
   // 当前页数据，不含禁用
   const selecTableData = computed(() => {
@@ -411,7 +438,8 @@
     settings.value.size = 'medium';
     if (tableSet) {
       const { checked, size } = JSON.parse(tableSet);
-      selectedShowColumn.value = checked;
+      const requiredChecked = settings.value.fields.filter((item) => item.disabled).map((item) => item.id);
+      selectedShowColumn.value = [...requiredChecked, ...checked];
       settings.value.checked = checked;
       settings.value.size = size;
     }
@@ -463,6 +491,11 @@
         disabled: true,
       },
       {
+        name: t('最后一次拉取配置耗时'),
+        id: 'pull-time',
+        disabled: true,
+      },
+      {
         name: t('在线状态'),
         id: 'online-status',
         disabled: true,
@@ -498,6 +531,7 @@
       'label',
       'current-version',
       'pull-status',
+      'pull-time',
       'online-status',
       'first-connect-time',
       'last-heartbeat-time',
@@ -515,6 +549,7 @@
     'label',
     'current-version',
     'pull-status',
+    'pull-time',
     'online-status',
     'first-connect-time',
     'last-heartbeat-time',
@@ -545,6 +580,11 @@
         desc: 'online_status',
       },
     };
+    if (updateSortType.value === 'desc') {
+      params.order!.desc = 'online_status,total_seconds';
+    } else if (updateSortType.value === 'asc') {
+      params.order!.asc = 'total_seconds';
+    }
     try {
       listLoading.value = true;
       const res = await getClientQueryList(bkBizId.value, appId.value, params);
@@ -606,6 +646,11 @@
         state.searchQuery.search.online_status = [...checked];
       });
     }
+  };
+
+  const handleSort = ({ type }: any) => {
+    updateSortType.value = type;
+    loadList();
   };
 
   const handleSettingsChange = ({ checked, size }: any) => {
@@ -796,6 +841,20 @@
       &.Offline {
         background: #979ba5;
         border: 3px solid #eeeef0;
+      }
+    }
+  }
+
+  .operation-btns {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 8px;
+    .refresh-btn {
+      width: 32px;
+      height: 32px;
+      .icon {
+        font-size: 16px;
       }
     }
   }

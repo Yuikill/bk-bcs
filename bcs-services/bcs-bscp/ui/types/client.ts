@@ -168,4 +168,7 @@ export interface IExampleFormData {
   labelArr: string[];
   clusterSwitch?: boolean;
   clusterInfo?: string;
+  rules?: string[];
+  systemType: 'Unix' | 'Windows';
+  selectedLineBreak?: 'LF' | 'CRLF';
 }
