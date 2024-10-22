@@ -48,6 +48,8 @@
     v-model:show="isBatchEditPermDialogShow"
     :loading="editLoading"
     :configs-length="props.selectedIds.length"
+    :bk-biz-id="props.bkBizId"
+    :id="props.appId"
     @confirm="handleConfimEditPermission" />
 </template>
 <script lang="ts" setup>

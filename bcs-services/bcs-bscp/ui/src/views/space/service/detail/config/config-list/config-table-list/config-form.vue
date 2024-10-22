@@ -224,13 +224,13 @@
   };
 
   const privilegeForm = computed(() => {
-    const { privilege, user, user_group, UID, GID } = localVal.value;
+    const { privilege, user, user_group, uid, gid } = localVal.value;
     return {
       privilege,
       user,
       user_group,
-      UID,
-      GID,
+      uid,
+      gid,
     };
   });
 

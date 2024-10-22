@@ -37,6 +37,8 @@
     @added="emits('refresh')" />
   <EditPermissionDialg
     v-model:show="isEditPermissionShow"
+    :bk-biz-id="props.spaceId"
+    :id="currentPkg as number"
     :loading="editLoading"
     :configs-length="props.isAcrossChecked ? props.dataCount - props.configs.length : props.configs.length"
     :configs="props.configs"

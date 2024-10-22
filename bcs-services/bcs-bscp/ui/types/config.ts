@@ -85,8 +85,8 @@ export interface IConfigEditParams {
   fileAP?: string;
   revision_name?: string;
   template_revision_id?: number;
-  UID?: string;
-  GID?: string;
+  uid?: number;
+  gid?: number;
 }
 
 // kv配置文件编辑表单参数
@@ -222,6 +222,8 @@ export interface IConfigImportItem {
   file_name?: string;
   is_exist: boolean;
   fileAP?: string;
+  uid?: number;
+  gid?: number;
 }
 
 // kv类型
@@ -281,6 +283,7 @@ export interface IUserPrivilege {
   name: string;
   privilege_type: string;
   read_only: boolean;
+  pid: number;
 }
 
 // 权限设置表单内容
@@ -289,6 +292,6 @@ export interface IConfigPrivilegeForm {
   user: string;
   user_group: string;
   privilege: string;
-  UID: string;
-  GID: string;
+  uid: number | undefined;
+  gid: number | undefined;
 }
