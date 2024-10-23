@@ -43,6 +43,7 @@
           :is-file-type="isFileType"
           :selected-items="selectedItems"
           :is-across-checked="isAcrossChecked"
+          :selected-keys="selectedKeys"
           :data-count="selecTableDataCount"
           @deleted="handleBatchDeleted" />
       </div>
@@ -75,6 +76,13 @@
         @update-selected-ids="
           (data) => {
             selectedIds = data.selectedConfigIds;
+            isAcrossChecked = data.isAcrossChecked;
+          }
+        "
+        @update-selected-keys="
+          (data) => {
+            console.log(data);
+            selectedKeys = data.selectedConfigKeys;
             isAcrossChecked = data.isAcrossChecked;
           }
         " />
@@ -117,6 +125,7 @@
   const selectedItems = ref<any[]>([]);
   const isAcrossChecked = ref(false);
   const selecTableDataCount = ref(0);
+  const selectedKeys = ref<string[]>([]);
 
   const refreshConfigList = (createConfig = false) => {
     if (isFileType.value) {

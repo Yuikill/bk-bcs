@@ -25,10 +25,7 @@
         :label="renderSelection"
         :show-overflow-tooltip="false">
         <template #default="{ row }">
-          <across-check-box
-            :checked="isChecked(row)"
-            :disabled="row.kv_state === 'DELETE'"
-            :handle-change="() => handleSelectionChange(row)" />
+          <across-check-box :checked="isChecked(row)" :handle-change="() => handleSelectionChange(row)" />
         </template>
       </bk-table-column>
       <bk-table-column :label="t('配置项名称')" prop="spec.key" :min-width="240">
@@ -215,7 +212,7 @@
     searchStr: string;
   }>();
 
-  const emits = defineEmits(['clearStr', 'updateSelectedIds', 'sendTableDataCount']);
+  const emits = defineEmits(['clearStr', 'updateSelectedIds', 'sendTableDataCount', 'updateSelectedKeys']);
 
   const loading = ref(false);
   const configList = ref<IConfigKvType[]>([]);
@@ -225,6 +222,7 @@
   const activeConfig = ref<IConfigKvType>(getDefaultKvItem());
   const deleteConfig = ref<IConfigKvType>();
   const selectedConfigIds = ref<number[]>([]);
+  const selectedConfigKeys = ref<string[]>([]);
   const isDiffPanelShow = ref(false);
   const diffConfig = ref(0);
   const isSearchEmpty = ref(false);
@@ -274,14 +272,13 @@
   });
 
   // 跨页全选
-  const selecTableData = computed(() => configList.value.filter((item) => item.kv_state !== 'DELETE'));
   const crossPageSelect = computed(
     () => pagination.value.limit < pagination.value.count && selecTableDataCount.value !== 0,
   );
   const { selectType, selections, renderSelection, renderTableTip, handleRowCheckChange, handleClearSelection } =
     useTableAcrossCheck({
       dataCount: selecTableDataCount, // 总数，不含禁用row
-      curPageData: selecTableData, // 当前页数据，不含禁用row
+      curPageData: configList, // 当前页数据，不含禁用row
       rowKey: ['id'],
       crossPageSelect, // 是否提供跨页全选功能
     });
@@ -291,8 +288,9 @@
     () => {
       refresh();
       selectedConfigIds.value = [];
-      // emits('updateSelectedIds', []);
+      selectedConfigKeys.value = [];
       emits('updateSelectedIds', { selectedConfigIds, isAcrossChecked: false });
+      emits('updateSelectedKeys', { selectedConfigKeys, isAcrossChecked: false });
     },
   );
 
@@ -319,8 +317,13 @@
     () => {
       isAcrossChecked.value = [CheckType.HalfAcrossChecked, CheckType.AcrossChecked].includes(selectType.value);
       selectedConfigIds.value = selections.value.map((item) => item.id);
+      selectedConfigKeys.value = selections.value.map((item) => item.spec.key);
       emits('updateSelectedIds', {
         selectedConfigIds: selectedConfigIds.value,
+        isAcrossChecked: isAcrossChecked.value,
+      });
+      emits('updateSelectedKeys', {
+        selectedConfigKeys: selectedConfigKeys.value,
         isAcrossChecked: isAcrossChecked.value,
       });
     },
@@ -379,7 +382,7 @@
         state.allConfigCount = res.count;
         state.allExistConfigCount = res.exclusion_count;
       });
-      selecTableDataCount.value = Number(res.exclusion_count);
+      selecTableDataCount.value = Number(res.count);
       emits('sendTableDataCount', selecTableDataCount.value);
       pagination.value.count = res.count;
     } catch (e) {

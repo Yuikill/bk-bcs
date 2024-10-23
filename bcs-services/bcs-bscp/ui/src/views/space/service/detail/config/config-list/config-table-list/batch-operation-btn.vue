@@ -1,6 +1,5 @@
 <template>
   <bk-popover
-    v-if="isFileType"
     ref="buttonRef"
     theme="light batch-operation-button-popover"
     placement="bottom-end"
@@ -9,26 +8,24 @@
     :arrow="false"
     @after-show="isPopoverOpen = true"
     @after-hidden="isPopoverOpen = false">
-    <bk-button :disabled="props.selectedIds.length === 0" :class="['batch-set-btn', { 'popover-open': isPopoverOpen }]">
+    <bk-button
+      :disabled="props.selectedIds.length === 0 && !isAcrossChecked"
+      :class="['batch-set-btn', { 'popover-open': isPopoverOpen }]">
       {{ t('批量操作') }}
       <AngleDown class="angle-icon" />
     </bk-button>
     <template #content>
-      <div class="operation-item" @click="handleOpenBantchEditPerm">
+      <div v-if="isFileType" class="operation-item" @click="handleBatchOperation('edit')">
         {{ t('批量修改权限') }}
       </div>
-      <div class="operation-item" @click="handleOpenBantchDelet">
+      <div class="operation-item" @click="handleBatchOperation('delete')">
         {{ t('批量删除') }}
+      </div>
+      <div class="operation-item" @click="handleBatchUnDeleteConfirm">
+        {{ t('批量恢复') }}
       </div>
     </template>
   </bk-popover>
-  <bk-button
-    v-else
-    class="batch-delete-btn"
-    :disabled="props.selectedIds.length === 0 && !isAcrossChecked"
-    @click="isBatchDeleteDialogShow = true">
-    {{ t('批量删除') }}
-  </bk-button>
   <DeleteConfirmDialog
     v-model:is-show="isBatchDeleteDialogShow"
     :title="
@@ -36,7 +33,7 @@
         n: isAcrossChecked ? dataCount - props.selectedIds.length : props.selectedIds.length,
       })
     "
-    :pending="batchDeletePending"
+    :pending="loading"
     @confirm="handleBatchDeleteConfirm">
     <div>
       {{
@@ -46,7 +43,7 @@
   </DeleteConfirmDialog>
   <EditPermissionDialog
     v-model:show="isBatchEditPermDialogShow"
-    :loading="editLoading"
+    :loading="loading"
     :configs-length="props.selectedIds.length"
     @confirm="handleConfimEditPermission" />
 </template>
@@ -55,7 +52,13 @@
   import { AngleDown } from 'bkui-vue/lib/icon';
   import { useI18n } from 'vue-i18n';
   import Message from 'bkui-vue/lib/message';
-  import { batchDeleteServiceConfigs, batchDeleteKv, batchAddConfigList } from '../../../../../../../api/config';
+  import {
+    batchDeleteServiceConfigs,
+    batchDeleteKv,
+    batchAddConfigList,
+    batchUndeleteKv,
+    batchUndeleteFile,
+  } from '../../../../../../../api/config';
   import DeleteConfirmDialog from '../../../../../../../components/delete-confirm-dialog.vue';
   import EditPermissionDialog from '../../../../../templates/list/package-detail/operations/edit-permission/edit-permission-dialog.vue';
   import { IConfigItem } from '../../../../../../../../types/config';
@@ -72,6 +75,7 @@
     bkBizId: string;
     appId: number;
     selectedIds: number[];
+    selectedKeys: string[];
     isFileType: boolean; // 是否为文件型配置
     selectedItems: IConfigItem[];
     isAcrossChecked: boolean;
@@ -80,44 +84,70 @@
 
   const emits = defineEmits(['deleted']);
 
-  const batchDeletePending = ref(false);
+  const loading = ref(false);
   const isBatchDeleteDialogShow = ref(false);
   const isBatchEditPermDialogShow = ref(false);
   const isPopoverOpen = ref(false);
   const buttonRef = ref();
-  const editLoading = ref(false);
 
   const handleBatchDeleteConfirm = async () => {
-    batchDeletePending.value = true;
-    if (props.isFileType) {
-      await batchDeleteServiceConfigs(props.bkBizId, props.appId, props.selectedIds);
-    } else {
-      await batchDeleteKv(props.bkBizId, props.appId, props.selectedIds, props.isAcrossChecked);
+    loading.value = true;
+    try {
+      if (props.isFileType) {
+        await batchDeleteServiceConfigs(props.bkBizId, props.appId, props.selectedIds);
+      } else {
+        await batchDeleteKv(props.bkBizId, props.appId, props.selectedIds, props.isAcrossChecked);
+      }
+      Message({
+        theme: 'success',
+        message: props.isFileType ? t('批量删除配置文件成功') : t('批量删除配置项成功'),
+      });
+      isBatchDeleteDialogShow.value = false;
+      setTimeout(() => {
+        emits('deleted');
+      }, 300);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      loading.value = false;
     }
-    Message({
-      theme: 'success',
-      message: props.isFileType ? t('批量删除配置文件成功') : t('批量删除配置项成功'),
-    });
-    isBatchDeleteDialogShow.value = false;
-    setTimeout(() => {
-      emits('deleted');
-      batchDeletePending.value = false;
-    }, 300);
   };
 
-  const handleOpenBantchEditPerm = () => {
-    buttonRef.value.hide();
-    isBatchEditPermDialogShow.value = true;
+  const handleBatchUnDeleteConfirm = async () => {
+    loading.value = true;
+    try {
+      if (props.isFileType) {
+        await batchUndeleteFile(props.bkBizId, props.appId, props.selectedIds);
+      } else {
+        await batchUndeleteKv(props.bkBizId, props.appId, props.selectedKeys, props.isAcrossChecked);
+      }
+      Message({
+        theme: 'success',
+        message: props.isFileType ? t('批量恢复配置文件成功') : t('批量恢复配置项成功'),
+      });
+      setTimeout(() => {
+        emits('deleted');
+      }, 300);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      buttonRef.value.hide();
+      loading.value = false;
+    }
   };
 
-  const handleOpenBantchDelet = () => {
+  const handleBatchOperation = (type: string) => {
+    if (type === 'delete') {
+      isBatchDeleteDialogShow.value = true;
+    } else if (type === 'edit') {
+      isBatchEditPermDialogShow.value = true;
+    }
     buttonRef.value.hide();
-    isBatchDeleteDialogShow.value = true;
   };
 
   const handleConfimEditPermission = async ({ permission }: { permission: IPermissionType }) => {
     try {
-      editLoading.value = true;
+      loading.value = true;
       const { privilege, user, user_group } = permission;
       const editConfigList = props.selectedItems.map((item) => {
         const { id, spec, commit_spec } = item;
@@ -140,7 +170,7 @@
     } catch (error) {
       console.error(error);
     } finally {
-      editLoading.value = false;
+      loading.value = false;
     }
     emits('deleted');
   };
@@ -251,7 +281,6 @@
     padding: 4px 0;
     border: 1px solid #dcdee5;
     box-shadow: 0 2px 6px 0 #0000001a;
-    width: auto !important;
     .operation-item {
       padding: 0 12px;
       min-width: 58px;

@@ -716,7 +716,7 @@
   // 全选
   const handleSelectAll = (val: boolean) => {
     if (val) {
-      selectedConfigItems.value = configList.value.filter((item) => item.file_state !== 'DELETE');
+      selectedConfigItems.value = configList.value;
     } else {
       selectedConfigItems.value = [];
     }
